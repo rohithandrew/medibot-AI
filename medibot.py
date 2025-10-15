@@ -1,9 +1,19 @@
 import os
 from dotenv import load_dotenv
+import pywhatkit
 from langchain.chat_models import init_chat_model
 
 load_dotenv()
 model = init_chat_model("gpt-4o-mini", model_provider="openai")
+
+ALERT_NUMBER = "+7010722108"
+
+def send_whatsapp_alert(message, phone_number=ALERT_NUMBER):
+    try:
+        pywhatkit.sendwhatmsg_instantly(phone_number, message, wait_time=15, tab_close=True)
+        print("Alert message sent successfully.")
+    except Exception as e:
+        print("An error occurred while sending the alert message:", e)
 
 def emergency_assistance_loop():
     print("\nEmergency Assistance Mode - type 'quit' to exit this mode.")
@@ -56,6 +66,18 @@ Bot:  """
             print("\nBot response:")
             print(response.content)
             conversation_history += f"Bot: {response.content}\n"
+
+def analyze_critical_condition(spO2, temperature, heart_rate):
+    abnormalities = []
+    if spO2 < 95:
+        abnormalities.append(f"SpO2 is low at {spO2}%, indicating potential hypoxemia.")
+    if temperature < 36.1 or temperature > 37.2:
+        abnormalities.append(f"Temperature is abnormal at {temperature}°C, which could indicate fever or hypothermia.")
+    if heart_rate < 60:
+        abnormalities.append(f"Heart rate is low at {heart_rate} bpm (bradycardia).")
+    elif heart_rate > 100:
+        abnormalities.append(f"Heart rate is high at {heart_rate} bpm (tachycardia).")
+    return abnormalities
 
 def iot_vitals_analysis(spO2, temperature, heart_rate):
     prompt = (
@@ -120,8 +142,16 @@ def main():
                 print("\nBot response:")
                 print(bot_response)
 
+                abnormalities = analyze_critical_condition(spO2_val, temp_val, hr_val)
+                if abnormalities:
+                    alert_message = (
+                        "Critical Alert! Patient vitals show abnormalities:\n" + "\n".join(abnormalities)
+                    )
+                    send_whatsapp_alert(alert_message)
+
         else:
             print("Invalid mode choice. Please select 1, 2, or Q.")
+
 
 if __name__ == "__main__":
     main()
