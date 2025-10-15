@@ -51,16 +51,27 @@ Instructions:
 Conversation so far:
 {conversation_history}
 User: {user_input}
-Bot: """
+Bot:  """
             response = model.invoke(prompt)
             print("\nBot response:")
             print(response.content)
             conversation_history += f"Bot: {response.content}\n"
 
-def iot_vitals_analysis(spO2, temperature):
-    prompt = f"Patient SpO2: {spO2}%, Temperature: {temperature}°C.\n" \
-             "Analyze these vitals, identify abnormalities, and advise what to do for patient safety. " \
-             "Do NOT use any markdown formatting (such as asterisks, hashes, backticks, or dashes) in your answer. Use only plain text with complete sentences and normal paragraphs."
+def iot_vitals_analysis(spO2, temperature, heart_rate):
+    prompt = (
+        f"The patient has the following vital signs:\n"
+        f"SpO2: {spO2}%\n"
+        f"Temperature: {temperature}°C\n"
+        f"Heart Rate (ECG): {heart_rate} bpm\n"
+        "Instructions:\n"
+        "- Analyze each vital sign individually, making sure to check for:\n"
+        "  * Normal SpO2 (95-100%).\n"
+        "  * Normal temperature (36.1°C to 37.2°C).\n"
+        "  * Normal heart rate 60–100 bpm. Below 60 is bradycardia, above 100 is tachycardia.\n"
+        "- Identify if any value is abnormal and describe what this may indicate for the patient's health.\n"
+        "- Advise on what should be done for patient safety.\n"
+        "- Do NOT use any markdown formatting (such as asterisks, hashes, backticks, or dashes) in your answer. Use only plain text with complete sentences and normal paragraphs."
+    )
     response = model.invoke(prompt)
     return response.content
 
@@ -92,15 +103,20 @@ def main():
                 if user_temp.lower() == "quit":
                     print("Exiting Vital Signs Monitoring mode.")
                     break
+                user_hr = input("Enter Heart Rate (bpm) (or 'quit' to exit): ").strip()
+                if user_hr.lower() == "quit":
+                    print("Exiting Vital Signs Monitoring mode.")
+                    break
 
                 try:
                     spO2_val = float(user_spo2)
                     temp_val = float(user_temp)
+                    hr_val = float(user_hr)
                 except ValueError:
-                    print("Invalid numeric input for SpO2 or temperature. Please try again.")
+                    print("Invalid input for SpO2, temperature, or heart rate. Please try again.")
                     continue
 
-                bot_response = iot_vitals_analysis(spO2_val, temp_val)
+                bot_response = iot_vitals_analysis(spO2_val, temp_val, hr_val)
                 print("\nBot response:")
                 print(bot_response)
 
